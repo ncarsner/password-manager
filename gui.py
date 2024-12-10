@@ -40,20 +40,23 @@ class PasswordManagerGUI(QtWidgets.QMainWindow):
     def main_screen(self):
         self.main_widget = QtWidgets.QWidget()
         self.setCentralWidget(self.main_widget)
-        layout = QtWidgets.QVBoxLayout()
+        main_layout = QtWidgets.QVBoxLayout()
+        button_layout = QtWidgets.QHBoxLayout()
 
         self.add_password_button = QtWidgets.QPushButton("Add Password")
-        # self.resize(800, 600)
         self.add_password_button.clicked.connect(self.add_password)
         self.view_passwords_button = QtWidgets.QPushButton("View Passwords")
         self.view_passwords_button.clicked.connect(self.view_passwords)
         self.generate_password_button = QtWidgets.QPushButton("Generate Password")
         self.generate_password_button.clicked.connect(self.generate_password)
 
-        layout.addWidget(self.add_password_button)
-        layout.addWidget(self.view_passwords_button)
-        layout.addWidget(self.generate_password_button)
-        self.main_widget.setLayout(layout)
+        button_layout.addWidget(self.add_password_button)
+        button_layout.addWidget(self.view_passwords_button)
+        button_layout.addWidget(self.generate_password_button)
+
+        main_layout.addLayout(button_layout)
+        main_layout.addStretch()  # Add stretch to push buttons to the top
+        self.main_widget.setLayout(main_layout)
 
     def add_password(self):
         self.add_password_widget = QtWidgets.QWidget()
@@ -108,13 +111,15 @@ class PasswordManagerGUI(QtWidgets.QMainWindow):
     def load_passwords(self):
         passwords = self.db.get_passwords()
         self.passwords_table.setRowCount(len(passwords))
-        for row, (website, username, encrypted_password) in enumerate(passwords):
+        for row, password_data in enumerate(passwords):
+            website, username, encrypted_password, notes = password_data[:4]
             decrypted_password = decrypt(encrypted_password)
             self.passwords_table.setItem(row, 0, QtWidgets.QTableWidgetItem(website))
             self.passwords_table.setItem(row, 1, QtWidgets.QTableWidgetItem(username))
             self.passwords_table.setItem(
                 row, 2, QtWidgets.QTableWidgetItem(decrypted_password)
             )
+            self.passwords_table.setItem(row, 3, QtWidgets.QTableWidgetItem(notes))
 
     def generate_password(self):
         length = random.randint(8, 20)

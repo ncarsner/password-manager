@@ -6,7 +6,9 @@ cipher_suite = Fernet(key)
 
 
 def encrypt(data):
-    return cipher_suite.encrypt(data.encode())
+    if isinstance(data, str):
+        data = data.encode()
+    return cipher_suite.encrypt(data)
 
 
 def decrypt(data):
