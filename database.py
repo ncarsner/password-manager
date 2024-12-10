@@ -19,7 +19,7 @@ class Database:
                 )
             """)
 
-    def add_password(self, service_name, username, password, notes):
+    def add_password(self, service_name, username, password, notes=""):
         encrypted_password = encrypt(password)
         with self.conn:
             self.conn.execute(

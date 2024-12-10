@@ -1,3 +1,5 @@
+import random
+import string
 from PyQt5 import QtWidgets, uic
 from database import Database
 from encryption import encrypt, decrypt
@@ -11,6 +13,8 @@ class PasswordManagerGUI(QtWidgets.QMainWindow):
 
     def init_ui(self):
         self.setWindowTitle("Password Manager")
+        self.resize(900, 500)
+
         self.login_screen()
 
     def login_screen(self):
@@ -39,6 +43,7 @@ class PasswordManagerGUI(QtWidgets.QMainWindow):
         layout = QtWidgets.QVBoxLayout()
 
         self.add_password_button = QtWidgets.QPushButton("Add Password")
+        # self.resize(800, 600)
         self.add_password_button.clicked.connect(self.add_password)
         self.view_passwords_button = QtWidgets.QPushButton("View Passwords")
         self.view_passwords_button.clicked.connect(self.view_passwords)
@@ -51,16 +56,92 @@ class PasswordManagerGUI(QtWidgets.QMainWindow):
         self.main_widget.setLayout(layout)
 
     def add_password(self):
-        # Implement add password functionality
-        pass
+        self.add_password_widget = QtWidgets.QWidget()
+        self.setCentralWidget(self.add_password_widget)
+        layout = QtWidgets.QVBoxLayout()
+
+        self.website_label = QtWidgets.QLabel("Website:")
+        self.website_input = QtWidgets.QLineEdit()
+        self.username_label = QtWidgets.QLabel("Username:")
+        self.username_input = QtWidgets.QLineEdit()
+        self.password_label = QtWidgets.QLabel("Password:")
+        self.password_input = QtWidgets.QLineEdit()
+        self.password_input.setEchoMode(QtWidgets.QLineEdit.Password)
+        self.save_button = QtWidgets.QPushButton("Save")
+        self.save_button.clicked.connect(self.save_password)
+
+        layout.addWidget(self.website_label)
+        layout.addWidget(self.website_input)
+        layout.addWidget(self.username_label)
+        layout.addWidget(self.username_input)
+        layout.addWidget(self.password_label)
+        layout.addWidget(self.password_input)
+        layout.addWidget(self.save_button)
+        self.add_password_widget.setLayout(layout)
+
+    def save_password(self):
+        website = self.website_input.text()
+        username = self.username_input.text()
+        password = self.password_input.text()
+        encrypted_password = encrypt(password)
+        self.db.add_password(website, username, encrypted_password, "")
+        QtWidgets.QMessageBox.information(
+            self, "Success", "Password saved successfully!"
+        )
+        self.main_screen()
 
     def view_passwords(self):
-        # Implement view passwords functionality
-        pass
+        self.view_passwords_widget = QtWidgets.QWidget()
+        self.setCentralWidget(self.view_passwords_widget)
+        layout = QtWidgets.QVBoxLayout()
+
+        self.passwords_table = QtWidgets.QTableWidget()
+        self.passwords_table.setColumnCount(4)
+        self.passwords_table.setHorizontalHeaderLabels(
+            ["Website", "Username", "Password", "Notes"]
+        )
+        self.load_passwords()
+
+        layout.addWidget(self.passwords_table)
+        self.view_passwords_widget.setLayout(layout)
+
+    def load_passwords(self):
+        passwords = self.db.get_passwords()
+        self.passwords_table.setRowCount(len(passwords))
+        for row, (website, username, encrypted_password) in enumerate(passwords):
+            decrypted_password = decrypt(encrypted_password)
+            self.passwords_table.setItem(row, 0, QtWidgets.QTableWidgetItem(website))
+            self.passwords_table.setItem(row, 1, QtWidgets.QTableWidgetItem(username))
+            self.passwords_table.setItem(
+                row, 2, QtWidgets.QTableWidgetItem(decrypted_password)
+            )
 
     def generate_password(self):
-        # Implement password generation functionality
-        pass
+        length = random.randint(8, 20)
+        characters = string.ascii_letters + string.digits + string.punctuation
+        password = "".join(random.choice(characters) for _ in range(length))
+
+        self.generated_password_widget = QtWidgets.QWidget()
+        self.setCentralWidget(self.generated_password_widget)
+        layout = QtWidgets.QVBoxLayout()
+
+        self.generated_password_label = QtWidgets.QLabel("Generated Password:")
+        self.generated_password_display = QtWidgets.QLineEdit(password)
+        self.generated_password_display.setReadOnly(True)
+        self.copy_button = QtWidgets.QPushButton("Copy to Clipboard")
+        self.copy_button.clicked.connect(self.copy_to_clipboard)
+
+        layout.addWidget(self.generated_password_label)
+        layout.addWidget(self.generated_password_display)
+        layout.addWidget(self.copy_button)
+        self.generated_password_widget.setLayout(layout)
+
+    def copy_to_clipboard(self):
+        clipboard = QtWidgets.QApplication.clipboard()
+        clipboard.setText(self.generated_password_display.text())
+        QtWidgets.QMessageBox.information(
+            self, "Copied", "Password copied to clipboard!"
+        )
 
 
 # if __name__ == "__main__":
