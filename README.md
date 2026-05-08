@@ -1,48 +1,80 @@
-# Secure Password Manager with GUI Interface
+# Password Manager
 
-#### 1. Requirements
-- [ ] **Security**: Use strong encryption (e.g., AES-256) for storing passwords.
-- [ ] **User Authentication**: Implement a master password for accessing the password manager.
-- [ ] **Password Generation**: Provide a feature to generate strong passwords.
-- [ ] **Password Storage**: Securely store passwords in an encrypted database.
-- [ ] **Cross-Platform**: Ensure the application works on Windows, macOS, and Linux.
-- [ ] **User Interface**: Design a user-friendly GUI for managing passwords.
+This project is a password manager application that provides a secure way to store and manage passwords. It consists of a Python backend and a small-footprint UX frontend.
 
-#### 2. Tech Stack
-- [ ] **Programming Language**: Python
-- [ ] **GUI Framework**: Tkinter or PyQt
-- [ ] **Database**: SQLite (encrypted with SQLCipher)
-- [ ] **Encryption Library**: `cryptography` library in Python
+## Project Structure
 
-#### 3. Project Setup
-- [x] Create a new Python project.
-- [x] Set up a virtual environment.
-- [x] Create `requirements.txt` file with necessary libraries: `tkinter`, `pyqt5`, `cryptography`
-- [ ] Import requirements from file
+```
+password-manager
+├── backend
+│   ├── src
+│   │   ├── app.py                # Entry point for the backend application
+│   │   ├── api
+│   │   │   ├── __init__.py       # Initializes the API module
+│   │   │   └── v1.py             # API endpoints for version 1
+│   │   ├── models
+│   │   │   └── vault.py          # Vault model class
+│   │   ├── services
+│   │   │   ├── crypto.py         # Cryptographic functions
+│   │   │   └── storage.py        # Storage operations
+│   │   ├── utils
+│   │   │   └── helpers.py        # Utility functions
+│   │   └── config.py             # Configuration settings
+│   ├── tests
+│   │   └── test_api.py           # Unit tests for API endpoints
+│   ├── requirements.txt           # Python dependencies
+│   └── pyproject.toml             # Project metadata and dependencies
+├── frontend
+│   ├── src
+│   │   ├── index.html            # Main HTML file for the frontend
+│   │   ├── main.js               # Main JavaScript logic
+│   │   └── styles.css            # CSS styles
+│   ├── components
+│   │   └── vault-view.js         # Component for managing the password vault
+│   └── tests
+│       └── test_ui.py            # Unit tests for frontend components
+├── scripts
+│   └── init_db.sh                # Script for initializing the database
+├── .env.sample                    # Sample environment configuration
+├── LICENSE                        # Licensing information
+└── README.md                     # Project documentation
+```
 
-#### 4. Database Schema Design
-- [ ] Create a table for storing passwords with fields for `id`, `service_name`, `username`, `password`, and `notes`.
+## Installation
 
-#### 5. Implement Encryption and Decryption Functions
-- [ ] Use the `cryptography` library to encrypt and decrypt passwords.
+1. Clone the repository:
+   ```
+   git clone <repository-url>
+   cd password-manager
+   ```
 
-#### 6. GUI Development
-- [ ] **Login Screen**: For master password entry.
-- [ ] **Main Screen**: To display, add, edit, and delete passwords.
-- [ ] **Password Generation**: A tool to generate strong passwords.
+2. Set up the backend:
+   - Install `uv` if you haven't already:
+     ```
+     curl -LsSf https://astral.sh/uv/install.sh | sh
+     ```
+   - Install the required Python packages and set up the virtual environment:
+     ```
+     uv sync
+     ```
 
-#### 7. Core Feature Implementation
-- [ ] **User Authentication**: Verify the master password.
-- [ ] **Password Management**: Add, view, edit, and delete passwords.
-- [ ] **Password Generation**: Generate and copy strong passwords to the clipboard.
+3. Set up the frontend:
+   - Navigate to the `frontend` directory.
+   - Open `index.html` in a web browser to view the application.
 
-#### 8. Application Testing
-- [ ] Perform unit tests and integration tests.
-- [ ] Ensure encryption and decryption work correctly.
-- [ ] Validate the GUI functionality.
+## Usage
 
-#### 9. Packaging
-- [ ] Use tools like PyInstaller to create executable files for different platforms.
+- Start the backend server by running:
+  ```
+  python src/app.py
+  ```
 
-#### 10. Documentation
-- [ ] Write user documentation and provide instructions for installation and usage.
+- Access the frontend by opening `index.html` in a web browser.
+
+## Contributing
+
+Contributions are welcome! Please submit a pull request or open an issue for any enhancements or bug fixes.
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for more details.
