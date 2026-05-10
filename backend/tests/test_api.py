@@ -212,6 +212,112 @@ def test_password_length_validation(client: FlaskClient) -> None:
     assert resp.status_code == 201
 
 
+def test_update_credential_partial(client: FlaskClient) -> None:
+    """Test PATCH updates all supplied fields and leaves others unchanged."""
+    resp = client.post("/api/v1/vaults", json={"name": "Edit Vault"})
+    vault_id = resp.json["id"]
+    resp = client.post(
+        f"/api/v1/vaults/{vault_id}/passwords",
+        json={
+            "domain": "old.com",
+            "username": "olduser",
+            "password": "oldpass1",
+            "notes": "old note",
+        },
+    )
+    password_id = resp.json["id"]
+
+    # Update domain only — username and notes unchanged
+    resp = client.patch(f"/api/v1/passwords/{password_id}", json={"domain": "new.com"})
+    assert resp.status_code == 200
+    assert resp.json["message"] == "Credential updated successfully"
+
+    resp = client.get(f"/api/v1/vaults/{vault_id}/passwords")
+    cred = next(c for c in resp.json if c["id"] == password_id)
+    assert cred["domain"] == "new.com"
+    assert cred["username"] == "olduser"
+    assert cred["password"] == "oldpass1"
+    assert cred["notes"] == "old note"
+
+    # Update username and notes to cover those branches
+    resp = client.patch(
+        f"/api/v1/passwords/{password_id}",
+        json={"username": "newuser", "notes": "new note"},
+    )
+    assert resp.status_code == 200
+    resp = client.get(f"/api/v1/vaults/{vault_id}/passwords")
+    cred = next(c for c in resp.json if c["id"] == password_id)
+    assert cred["username"] == "newuser"
+    assert cred["notes"] == "new note"
+
+
+def test_update_credential_password_reencrypted(client: FlaskClient) -> None:
+    """Test PATCH re-encrypts new password and it decrypts correctly."""
+    resp = client.post("/api/v1/vaults", json={"name": "Reencrypt Vault"})
+    vault_id = resp.json["id"]
+    resp = client.post(
+        f"/api/v1/vaults/{vault_id}/passwords",
+        json={"password": "original1"},
+    )
+    password_id = resp.json["id"]
+
+    resp = client.patch(
+        f"/api/v1/passwords/{password_id}", json={"password": "updated99"}
+    )
+    assert resp.status_code == 200
+
+    resp = client.get(f"/api/v1/vaults/{vault_id}/passwords")
+    cred = next(c for c in resp.json if c["id"] == password_id)
+    assert cred["password"] == "updated99"
+
+
+def test_update_credential_password_validation(client: FlaskClient) -> None:
+    """Test PATCH rejects passwords outside 8–32 chars."""
+    resp = client.post("/api/v1/vaults", json={"name": "Val Vault"})
+    vault_id = resp.json["id"]
+    resp = client.post(
+        f"/api/v1/vaults/{vault_id}/passwords", json={"password": "validpas"}
+    )
+    password_id = resp.json["id"]
+
+    resp = client.patch(f"/api/v1/passwords/{password_id}", json={"password": "short"})
+    assert resp.status_code == 400
+    assert "error" in resp.json
+
+    resp = client.patch(f"/api/v1/passwords/{password_id}", json={"password": "a" * 33})
+    assert resp.status_code == 400
+    assert "error" in resp.json
+
+
+def test_update_credential_not_found(client: FlaskClient) -> None:
+    """Test PATCH on non-existent credential returns 404."""
+    resp = client.patch("/api/v1/passwords/999", json={"domain": "x.com"})
+    assert resp.status_code == 404
+    assert "error" in resp.json
+
+
+def test_update_credential_empty_body(client: FlaskClient) -> None:
+    """Test PATCH with empty body returns 400."""
+    resp = client.patch("/api/v1/passwords/1", json={})
+    assert resp.status_code == 400
+    assert "error" in resp.json
+
+
+def test_update_credential_no_valid_fields(client: FlaskClient) -> None:
+    """Test PATCH with unrecognized fields only returns 400."""
+    resp = client.post("/api/v1/vaults", json={"name": "NVF Vault"})
+    vault_id = resp.json["id"]
+    resp = client.post(
+        f"/api/v1/vaults/{vault_id}/passwords", json={"password": "validpas"}
+    )
+    password_id = resp.json["id"]
+    resp = client.patch(
+        f"/api/v1/passwords/{password_id}", json={"unknown_field": "value"}
+    )
+    assert resp.status_code == 400
+    assert "error" in resp.json
+
+
 def test_decryption_failure(client: FlaskClient) -> None:
     """Test handling of decryption failure — all fields still returned on error."""
     resp = client.post("/api/v1/vaults", json={"name": "Bad Crypto"})

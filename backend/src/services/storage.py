@@ -132,6 +132,52 @@ class StorageService:
             )
             return [dict(row) for row in cursor.fetchall()]
 
+    def update_password(
+        self,
+        password_id: int,
+        domain: str | None = None,
+        username: str | None = None,
+        encrypted_password: bytes | None = None,
+        notes: str | None = None,
+    ) -> bool:
+        """Update fields on an existing credential entry.
+
+        Args:
+            password_id: The ID of the credential to update.
+            domain: New domain value, or None to leave unchanged.
+            username: New username value, or None to leave unchanged.
+            encrypted_password: New encrypted password bytes, or None to leave unchanged.
+            notes: New notes value, or None to leave unchanged.
+
+        Returns:
+            True if a row was updated, False if not found or no fields given.
+        """
+        fields: list[str] = []
+        values: list[Any] = []
+        if domain is not None:
+            fields.append("domain = ?")
+            values.append(domain)
+        if username is not None:
+            fields.append("username = ?")
+            values.append(username)
+        if encrypted_password is not None:
+            fields.append("password = ?")
+            values.append(encrypted_password)
+        if notes is not None:
+            fields.append("notes = ?")
+            values.append(notes)
+        if not fields:
+            return False
+        values.append(password_id)
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                f"UPDATE passwords SET {', '.join(fields)} WHERE id = ?",  # noqa: S608
+                values,
+            )
+            conn.commit()
+            return bool(cursor.rowcount > 0)
+
     def delete_password(self, password_id: int) -> bool:
         """Delete a specific password entry.
 
