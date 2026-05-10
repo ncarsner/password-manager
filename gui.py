@@ -1,8 +1,10 @@
 import random
 import string
-from PyQt5 import QtWidgets, uic
+
+from PyQt5 import QtWidgets
+
 from database import Database
-from encryption import encrypt, decrypt
+from encryption import decrypt, encrypt
 
 
 class PasswordManagerGUI(QtWidgets.QMainWindow):

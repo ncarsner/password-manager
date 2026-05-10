@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Manager</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <h1>Password Manager</h1>
+
+        <div id="vault-management">
+            <h2>Create New Vault</h2>
+            <form id="vault-form">
+                <input type="text" id="vault-name" placeholder="Vault Name" required>
+                <button type="submit">Create Vault</button>
+            </form>
+
+            <h2>Your Vaults</h2>
+            <ul id="vault-list">
+                <!-- Vaults will be rendered here -->
+            </ul>
+        </div>
+
+        <div id="password-management" style="display: none;">
+            <button id="back-to-vaults">Back to Vaults</button>
+            <h2 id="current-vault-name">Vault Name</h2>
+
+            <h3>Add Credential</h3>
+            <form id="password-form">
+                <input type="text" id="new-domain" placeholder="Domain (e.g. github.com)">
+                <input type="text" id="new-username" placeholder="Username or Email">
+                <input type="password" id="new-password" placeholder="Password (8–32 characters)" required minlength="8" maxlength="32">
+                <input type="text" id="new-notes" placeholder="Notes (optional)">
+                <button type="submit">Add</button>
+            </form>
+
+            <h3>Credentials</h3>
+            <div id="password-list">
+                <!-- Credentials table rendered here by JS -->
+            </div>
+        </div>
+    </div>
+    <script src="main.js"></script>
+</body>
+</html>

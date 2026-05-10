@@ -1,8 +1,6 @@
-from gui import PasswordManagerGUI
-from PyQt5 import QtWidgets
+def main():
+    print("Hello from password-manager!")
+
 
 if __name__ == "__main__":
-    app = QtWidgets.QApplication([])
-    window = PasswordManagerGUI()
-    window.show()
-    app.exec_()
+    main()
