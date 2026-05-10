@@ -1,40 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
-const VaultView = () => {
-    const [vaults, setVaults] = useState([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchVaults = async () => {
-            try {
-                const response = await fetch('/api/v1/vaults');
-                const data = await response.json();
-                setVaults(data);
-            } catch (error) {
-                console.error('Error fetching vaults:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchVaults();
-    }, []);
-
-    if (loading) {
-        return <div>Loading...</div>;
-    }
-
+const VaultView = ({ vaultName, passwords = [] }) => {
     return (
         <div>
-            <h1>Your Vaults</h1>
-            <ul>
-                {vaults.map(vault => (
-                    <li key={vault.id}>
-                        <h2>{vault.name}</h2>
-                        <p>Passwords: {vault.passwords.length}</p>
-                    </li>
-                ))}
-            </ul>
+            {vaultName && <h1>{vaultName}</h1>}
+            {passwords.length === 0 ? (
+                <p>No passwords available</p>
+            ) : (
+                <ul>
+                    {passwords.map((password, index) => (
+                        <li key={index}>{password}</li>
+                    ))}
+                </ul>
+            )}
         </div>
     );
 };

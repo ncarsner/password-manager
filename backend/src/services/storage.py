@@ -84,38 +84,51 @@ class StorageService:
             row = cursor.fetchone()
             return dict(row) if row else None
 
-    def save_password(self, vault_id: int, encrypted_password: bytes) -> int:
-        """Save an encrypted password to a specific vault.
+    def save_password(
+        self,
+        vault_id: int,
+        domain: str,
+        username: str,
+        encrypted_password: bytes,
+        notes: str = "",
+    ) -> int:
+        """Save an encrypted credential to a specific vault.
 
         Args:
             vault_id: The ID of the vault.
+            domain: The domain or service name (e.g. github.com).
+            username: The username or email for the credential.
             encrypted_password: The encrypted password bytes.
+            notes: Optional free-text notes. Defaults to empty string.
 
         Returns:
-            The ID of the saved password entry.
+            The ID of the saved credential entry.
         """
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "INSERT INTO passwords (vault_id, password) VALUES (?, ?)",
-                (vault_id, encrypted_password),
+                "INSERT INTO passwords (vault_id, domain, username, password, notes)"
+                " VALUES (?, ?, ?, ?, ?)",
+                (vault_id, domain, username, encrypted_password, notes),
             )
             conn.commit()
             return cursor.lastrowid or 0
 
     def get_passwords(self, vault_id: int) -> list[dict[str, Any]]:
-        """Retrieve all passwords for a specific vault.
+        """Retrieve all credentials for a specific vault.
 
         Args:
             vault_id: The ID of the vault.
 
         Returns:
-            A list of dictionaries representing password entries.
+            A list of dicts with keys: id, domain, username, password, notes.
         """
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT id, password FROM passwords WHERE vault_id = ?", (vault_id,)
+                "SELECT id, domain, username, password, notes"
+                " FROM passwords WHERE vault_id = ?",
+                (vault_id,),
             )
             return [dict(row) for row in cursor.fetchall()]
 
@@ -149,4 +162,3 @@ class StorageService:
             cursor.execute("DELETE FROM vaults WHERE id = ?", (vault_id,))
             conn.commit()
             return bool(cursor.rowcount > 0)
-

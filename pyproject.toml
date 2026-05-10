@@ -3,7 +3,7 @@ name = "password-manager"
 version = "0.1.0"
 description = "A secure password manager application"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 dependencies = [
     "Flask>=2.1.2",
     "Flask-Cors>=3.0.10",
@@ -26,6 +26,11 @@ target-version = "py314"
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]
 addopts = "-v --cov=backend/src --cov-report=term-missing"
+
+[tool.coverage.report]
+exclude_lines = [
+    "if __name__ == .__main__.:",
+]
 
 [tool.mypy]
 python_version = "3.14"

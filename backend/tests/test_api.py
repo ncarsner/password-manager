@@ -1,6 +1,8 @@
 import os
+
 import pytest
 from flask.testing import FlaskClient
+
 from backend.src.app import app, init_db
 
 
@@ -11,21 +13,22 @@ def client() -> FlaskClient:
     # Ensure a fresh start
     if os.path.exists(db_path):
         os.remove(db_path)
-    
+
     # Re-initialize for test
     init_db(db_path)
-    
+
     # Configure app for testing
     app.config["TESTING"] = True
-    
+
     # We need to ensure StorageService uses the test db
     # Since it's instantiated at module level in v1.py, we might need to monkeypatch it
     from backend.src.api.v1 import storage_service
+
     storage_service.db_path = db_path
-    
+
     with app.test_client() as client:
         yield client
-    
+
     # Cleanup
     if os.path.exists(db_path):
         os.remove(db_path)
@@ -44,12 +47,12 @@ def test_create_and_get_vault(client: FlaskClient) -> None:
     resp = client.post("/api/v1/vaults", json={"name": "Test Vault"})
     assert resp.status_code == 201
     vault_id = resp.json["id"]
-    
+
     # List
     resp = client.get("/api/v1/vaults")
     assert resp.status_code == 200
     assert any(v["name"] == "Test Vault" for v in resp.json)
-    
+
     # Get by ID
     resp = client.get(f"/api/v1/vaults/{vault_id}")
     assert resp.status_code == 200
@@ -63,28 +66,57 @@ def test_vault_not_found(client: FlaskClient) -> None:
 
 
 def test_password_management(client: FlaskClient) -> None:
-    """Test adding, retrieving, and deleting passwords."""
-    # Setup vault
+    """Test adding, retrieving, and deleting credentials with all fields."""
     resp = client.post("/api/v1/vaults", json={"name": "Secure Vault"})
     vault_id = resp.json["id"]
-    
-    # Add password
-    resp = client.post(f"/api/v1/vaults/{vault_id}/passwords", json={"password": "secret123"})
+
+    # Add full credential
+    resp = client.post(
+        f"/api/v1/vaults/{vault_id}/passwords",
+        json={
+            "domain": "github.com",
+            "username": "alice",
+            "password": "secret123",
+            "notes": "work account",
+        },
+    )
     assert resp.status_code == 201
     password_id = resp.json["id"]
-    
-    # Get passwords
+
+    # Get credentials — verify all fields round-trip correctly
     resp = client.get(f"/api/v1/vaults/{vault_id}/passwords")
     assert resp.status_code == 200
-    assert any(p["password"] == "secret123" for p in resp.json)
-    
-    # Delete password
+    cred = next(c for c in resp.json if c["id"] == password_id)
+    assert cred["domain"] == "github.com"
+    assert cred["username"] == "alice"
+    assert cred["password"] == "secret123"
+    assert cred["notes"] == "work account"
+
+    # Delete credential
     resp = client.delete(f"/api/v1/passwords/{password_id}")
     assert resp.status_code == 200
-    
+
     # Verify deleted
     resp = client.get(f"/api/v1/vaults/{vault_id}/passwords")
     assert not any(p["id"] == password_id for p in resp.json)
+
+
+def test_credential_optional_fields(client: FlaskClient) -> None:
+    """Test that domain, username, and notes are optional."""
+    resp = client.post("/api/v1/vaults", json={"name": "Minimal Vault"})
+    vault_id = resp.json["id"]
+
+    resp = client.post(
+        f"/api/v1/vaults/{vault_id}/passwords", json={"password": "onlypass"}
+    )
+    assert resp.status_code == 201
+
+    resp = client.get(f"/api/v1/vaults/{vault_id}/passwords")
+    cred = resp.json[0]
+    assert cred["password"] == "onlypass"
+    assert cred["domain"] == ""
+    assert cred["username"] == ""
+    assert cred["notes"] == ""
 
 
 def test_delete_vault(client: FlaskClient) -> None:
@@ -146,23 +178,61 @@ def test_create_duplicate_vault(client: FlaskClient) -> None:
     assert "id" in resp.json
 
 
+def test_password_length_validation(client: FlaskClient) -> None:
+    """Test that passwords outside 8–32 characters are rejected."""
+    resp = client.post("/api/v1/vaults", json={"name": "Len Vault"})
+    vault_id = resp.json["id"]
+
+    # Too short
+    resp = client.post(
+        f"/api/v1/vaults/{vault_id}/passwords", json={"password": "short"}
+    )
+    assert resp.status_code == 400
+    assert "error" in resp.json
+
+    # Too long (33 chars)
+    resp = client.post(
+        f"/api/v1/vaults/{vault_id}/passwords",
+        json={"password": "a" * 33},
+    )
+    assert resp.status_code == 400
+    assert "error" in resp.json
+
+    # Exactly 8 chars — boundary
+    resp = client.post(
+        f"/api/v1/vaults/{vault_id}/passwords", json={"password": "exactly8"}
+    )
+    assert resp.status_code == 201
+
+    # Exactly 32 chars — boundary
+    resp = client.post(
+        f"/api/v1/vaults/{vault_id}/passwords",
+        json={"password": "a" * 32},
+    )
+    assert resp.status_code == 201
+
+
 def test_decryption_failure(client: FlaskClient) -> None:
-    """Test handling of decryption failure."""
-    # Create vault and password
+    """Test handling of decryption failure — all fields still returned on error."""
     resp = client.post("/api/v1/vaults", json={"name": "Bad Crypto"})
     vault_id = resp.json["id"]
-    client.post(f"/api/v1/vaults/{vault_id}/passwords", json={"password": "secret"})
+    client.post(
+        f"/api/v1/vaults/{vault_id}/passwords",
+        json={"domain": "example.com", "username": "bob", "password": "secret123"},
+    )
 
     # Monkeypatch crypto service with a new key to cause failure
-    from backend.src.api.v1 import crypto_service
     from cryptography.fernet import Fernet
+
+    from backend.src.api.v1 import crypto_service
+
     original_cipher = crypto_service.cipher
     crypto_service.cipher = Fernet(Fernet.generate_key())
 
     try:
         resp = client.get(f"/api/v1/vaults/{vault_id}/passwords")
         assert resp.status_code == 200
-        assert any("ERROR" in p["password"] for p in resp.json)
+        assert any(p["password"] is None for p in resp.json)
     finally:
         # Restore
         crypto_service.cipher = original_cipher

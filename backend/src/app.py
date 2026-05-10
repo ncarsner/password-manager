@@ -29,12 +29,27 @@ def init_db(db_path: str = "database.db") -> None:
             """
             CREATE TABLE IF NOT EXISTS passwords (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                vault_id INTEGER,
+                vault_id INTEGER NOT NULL,
+                domain TEXT NOT NULL DEFAULT '',
+                username TEXT NOT NULL DEFAULT '',
                 password BLOB NOT NULL,
+                notes TEXT NOT NULL DEFAULT '',
                 FOREIGN KEY (vault_id) REFERENCES vaults (id) ON DELETE CASCADE
             )
         """
         )
+        # Migrate existing databases that predate the domain/username/notes columns
+        for col, col_def in [
+            ("domain", "TEXT DEFAULT ''"),
+            ("username", "TEXT DEFAULT ''"),
+            ("notes", "TEXT DEFAULT ''"),
+        ]:
+            try:
+                cursor.execute(
+                    f"ALTER TABLE passwords ADD COLUMN {col} {col_def}"  # noqa: S608 — col is a hardcoded literal, not user input
+                )
+            except sqlite3.OperationalError:
+                pass  # Column already exists — safe to continue
         conn.commit()
 
 

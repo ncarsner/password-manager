@@ -1,12 +1,15 @@
 from typing import Any
-from flask import Blueprint, request, jsonify
+
+from flask import Blueprint, jsonify, request
+
+from ..config import Config
 from ..models.vault import Vault
-from ..services.storage import StorageService
 from ..services.crypto import CryptoService
+from ..services.storage import StorageService
 
 api_v1 = Blueprint("api_v1", __name__)
 storage_service = StorageService()
-crypto_service = CryptoService()
+crypto_service = CryptoService(key=Config.FERNET_KEY.encode())
 
 
 @api_v1.route("/vaults", methods=["GET"])
@@ -48,28 +51,42 @@ def delete_vault(vault_id: int) -> Any:
 
 @api_v1.route("/vaults/<int:vault_id>/passwords", methods=["GET"])
 def get_passwords(vault_id: int) -> Any:
-    """Retrieve all passwords for a vault (decrypted)."""
+    """Retrieve all credentials for a vault with passwords decrypted."""
     vault = storage_service.get_vault_by_id(vault_id)
     if not vault:
         return jsonify({"error": "Vault not found"}), 404
 
     entries = storage_service.get_passwords(vault_id)
-    passwords = []
+    credentials = []
     for entry in entries:
         try:
             decrypted = crypto_service.decrypt(entry["password"])
-            passwords.append({"id": entry["id"], "password": decrypted})
+            credentials.append(
+                {
+                    "id": entry["id"],
+                    "domain": entry["domain"],
+                    "username": entry["username"],
+                    "password": decrypted,
+                    "notes": entry["notes"],
+                }
+            )
         except Exception:
-            passwords.append(
-                {"id": entry["id"], "password": "ERROR: Could not decrypt"}
+            credentials.append(
+                {
+                    "id": entry["id"],
+                    "domain": entry["domain"],
+                    "username": entry["username"],
+                    "password": None,
+                    "notes": entry["notes"],
+                }
             )
 
-    return jsonify(passwords), 200
+    return jsonify(credentials), 200
 
 
 @api_v1.route("/vaults/<int:vault_id>/passwords", methods=["POST"])
 def add_password(vault_id: int) -> Any:
-    """Add a new password to a vault (encrypted)."""
+    """Add a new credential to a vault with the password encrypted."""
     vault = storage_service.get_vault_by_id(vault_id)
     if not vault:
         return jsonify({"error": "Vault not found"}), 404
@@ -78,9 +95,18 @@ def add_password(vault_id: int) -> Any:
     if not data or "password" not in data:
         return jsonify({"error": "Password is required"}), 400
 
-    encrypted = crypto_service.encrypt(data["password"])
-    password_id = storage_service.save_password(vault_id, encrypted)
-    return jsonify({"message": "Password added successfully", "id": password_id}), 201
+    raw_password: str = data["password"]
+    if not (8 <= len(raw_password) <= 32):
+        return jsonify({"error": "Password must be 8–32 characters"}), 400
+
+    domain: str = data.get("domain", "")
+    username: str = data.get("username", "")
+    notes: str = data.get("notes", "")
+    encrypted = crypto_service.encrypt(raw_password)
+    password_id = storage_service.save_password(
+        vault_id, domain, username, encrypted, notes
+    )
+    return jsonify({"message": "Credential added successfully", "id": password_id}), 201
 
 
 @api_v1.route("/passwords/<int:password_id>", methods=["DELETE"])

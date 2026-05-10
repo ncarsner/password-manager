@@ -1,4 +1,4 @@
-const apiBaseUrl = 'http://localhost:5000/api/v1';
+const apiBaseUrl = 'http://127.0.0.1:5000/api/v1';
 
 let currentVaultId = null;
 
@@ -23,10 +23,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Password Form Submission
     passwordForm.addEventListener('submit', async (event) => {
         event.preventDefault();
+        const domain = document.getElementById('new-domain').value.trim();
+        const username = document.getElementById('new-username').value.trim();
         const password = document.getElementById('new-password').value;
+        const notes = document.getElementById('new-notes').value.trim();
 
         if (password && currentVaultId) {
-            await addPassword(currentVaultId, password);
+            await addPassword(currentVaultId, domain, username, password, notes);
             passwordForm.reset();
             loadPasswords(currentVaultId);
         }
@@ -69,19 +72,19 @@ function renderVaults(vaults) {
     vaultList.innerHTML = '';
     vaults.forEach(vault => {
         const listItem = document.createElement('li');
-        
+
         const nameSpan = document.createElement('span');
         nameSpan.textContent = vault.name;
         nameSpan.className = 'vault-name';
         nameSpan.onclick = () => openVault(vault.id, vault.name);
-        
+
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = 'Delete';
         deleteBtn.onclick = (e) => {
             e.stopPropagation();
             deleteVault(vault.id);
         };
-        
+
         listItem.appendChild(nameSpan);
         listItem.appendChild(deleteBtn);
         vaultList.appendChild(listItem);
@@ -123,34 +126,116 @@ async function loadPasswords(vaultId) {
     }
 }
 
-function renderPasswords(passwords) {
-    const passwordList = document.getElementById('password-list');
-    passwordList.innerHTML = '';
-    passwords.forEach(p => {
-        const listItem = document.createElement('li');
-        
-        const passSpan = document.createElement('span');
-        passSpan.textContent = p.password;
-        
+function renderPasswords(credentials) {
+    const container = document.getElementById('password-list');
+    container.innerHTML = '';
+
+    if (credentials.length === 0) {
+        container.innerHTML = '<p class="empty-state">No credentials stored.</p>';
+        return;
+    }
+
+    const table = document.createElement('table');
+    table.className = 'credentials-table';
+
+    const thead = document.createElement('thead');
+    thead.innerHTML = '<tr><th>Domain</th><th>Username</th><th>Password</th><th>Notes</th><th></th></tr>';
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    credentials.forEach(p => {
+        const row = document.createElement('tr');
+
+        const domainCell = document.createElement('td');
+        domainCell.className = 'col-domain';
+        domainCell.textContent = p.domain || '—';
+        row.appendChild(domainCell);
+
+        const usernameCell = document.createElement('td');
+        usernameCell.className = 'col-username';
+        usernameCell.textContent = p.username || '—';
+        row.appendChild(usernameCell);
+
+        const passCell = document.createElement('td');
+        passCell.className = 'col-password';
+
+        const passContainer = document.createElement('div');
+        passContainer.className = 'pass-container';
+
+        if (p.password === null) {
+            const errSpan = document.createElement('span');
+            errSpan.className = 'pass-error';
+            errSpan.textContent = 'Unrecoverable — delete and re-add';
+            passContainer.appendChild(errSpan);
+        } else {
+            const passDisplay = document.createElement('span');
+            passDisplay.className = 'pass-display';
+            passDisplay.textContent = '••••••••';
+            passDisplay.dataset.value = p.password;
+
+            const toggleBtn = document.createElement('button');
+            toggleBtn.textContent = 'Show';
+            toggleBtn.className = 'toggle-btn toggle-show';
+            toggleBtn.onclick = () => {
+                const hidden = passDisplay.textContent === '••••••••';
+                passDisplay.textContent = hidden ? passDisplay.dataset.value : '••••••••';
+                toggleBtn.textContent = hidden ? 'Hide' : 'Show';
+                toggleBtn.className = hidden ? 'toggle-btn toggle-hide' : 'toggle-btn toggle-show';
+            };
+
+            const copyBtn = document.createElement('button');
+            copyBtn.textContent = 'Copy';
+            copyBtn.className = 'copy-btn';
+            copyBtn.onclick = async () => {
+                try {
+                    await navigator.clipboard.writeText(passDisplay.dataset.value);
+                    copyBtn.textContent = 'Copied!';
+                    copyBtn.classList.add('copy-success');
+                    setTimeout(() => {
+                        copyBtn.textContent = 'Copy';
+                        copyBtn.classList.remove('copy-success');
+                    }, 1500);
+                } catch {
+                    copyBtn.textContent = 'Error';
+                    setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500);
+                }
+            };
+
+            passContainer.appendChild(passDisplay);
+            passContainer.appendChild(toggleBtn);
+            passContainer.appendChild(copyBtn);
+        }
+        passCell.appendChild(passContainer);
+        row.appendChild(passCell);
+
+        const notesCell = document.createElement('td');
+        notesCell.className = 'col-notes';
+        notesCell.textContent = p.notes || '';
+        row.appendChild(notesCell);
+
+        const actionCell = document.createElement('td');
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = 'Delete';
+        deleteBtn.className = 'delete';
         deleteBtn.onclick = () => deletePassword(p.id);
-        
-        listItem.appendChild(passSpan);
-        listItem.appendChild(deleteBtn);
-        passwordList.appendChild(listItem);
+        actionCell.appendChild(deleteBtn);
+        row.appendChild(actionCell);
+
+        tbody.appendChild(row);
     });
+    table.appendChild(tbody);
+    container.appendChild(table);
 }
 
-async function addPassword(vaultId, password) {
+async function addPassword(vaultId, domain, username, password, notes) {
     try {
         await fetch(`${apiBaseUrl}/vaults/${vaultId}/passwords`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password }),
+            body: JSON.stringify({ domain, username, password, notes }),
         });
     } catch (error) {
-        console.error('Error adding password:', error);
+        console.error('Error adding credential:', error);
     }
 }
 

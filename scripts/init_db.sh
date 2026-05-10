@@ -18,8 +18,11 @@ CREATE TABLE IF NOT EXISTS vaults (
 
 CREATE TABLE IF NOT EXISTS passwords (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    vault_id INTEGER,
-    password TEXT NOT NULL,
+    vault_id INTEGER NOT NULL,
+    domain TEXT NOT NULL DEFAULT '',
+    username TEXT NOT NULL DEFAULT '',
+    password BLOB NOT NULL,
+    notes TEXT NOT NULL DEFAULT '',
     FOREIGN KEY (vault_id) REFERENCES vaults (id) ON DELETE CASCADE
 );
 EOF

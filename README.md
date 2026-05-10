@@ -20,10 +20,9 @@ password-manager
 │   │   ├── utils
 │   │   │   └── helpers.py        # Utility functions
 │   │   └── config.py             # Configuration settings
-│   ├── tests
-│   │   └── test_api.py           # Unit tests for API endpoints
-│   ├── requirements.txt           # Python dependencies
-│   └── pyproject.toml             # Project metadata and dependencies
+│   └── tests
+│       ├── test_api.py           # Unit tests for API endpoints
+│       └── test_units.py         # Unit tests for services and utilities
 ├── frontend
 │   ├── src
 │   │   ├── index.html            # Main HTML file for the frontend
@@ -32,10 +31,12 @@ password-manager
 │   ├── components
 │   │   └── vault-view.js         # Component for managing the password vault
 │   └── tests
-│       └── test_ui.py            # Unit tests for frontend components
+│       └── test_ui.test.jsx      # Unit tests for frontend components
 ├── scripts
 │   └── init_db.sh                # Script for initializing the database
 ├── .env.sample                    # Sample environment configuration
+├── pyproject.toml                 # Project metadata and dependencies
+├── uv.lock                        # Locked dependency versions
 ├── LICENSE                        # Licensing information
 └── README.md                     # Project documentation
 ```
@@ -48,28 +49,40 @@ password-manager
    cd password-manager
    ```
 
-2. Set up the backend:
-   - Install `uv` if you haven't already:
-     ```
-     curl -LsSf https://astral.sh/uv/install.sh | sh
-     ```
-   - Install the required Python packages and set up the virtual environment:
-     ```
-     uv sync
-     ```
+2. Install `uv` if you haven't already:
+   ```
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
 
-3. Set up the frontend:
-   - Navigate to the `frontend` directory.
-   - Open `index.html` in a web browser to view the application.
+3. Install dependencies and create the virtual environment:
+   ```
+   uv sync
+   ```
+
+4. Configure environment variables:
+   ```
+   cp .env.sample .env
+   ```
+   Edit `.env` and set `SECRET_KEY` and `ENCRYPTION_KEY` to secure random values before running in production.
+   `DATABASE_PATH` defaults to `database.db` in the project root.
+
+5. Set up the frontend:
+   - Open `frontend/src/index.html` in a web browser to view the application.
 
 ## Usage
 
-- Start the backend server by running:
-  ```
-  python src/app.py
-  ```
+Start the backend server:
+```
+uv run flask --app backend.src.app run
+```
 
-- Access the frontend by opening `index.html` in a web browser.
+The API will be available at `http://localhost:5000`. Access the frontend by opening `frontend/src/index.html` in a web browser.
+
+### Running tests
+
+```
+uv run python3 -m pytest
+```
 
 ## Contributing
 

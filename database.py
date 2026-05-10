@@ -1,5 +1,6 @@
 import sqlite3
-from encryption import encrypt, decrypt
+
+from encryption import encrypt
 
 
 class Database:
