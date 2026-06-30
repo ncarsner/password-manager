@@ -106,11 +106,11 @@ li {
 }
 
 /* Fixed column widths — changing these is the only way to adjust layout */
-.credentials-table th:nth-child(1) { width: 15%; }  /* Domain */
-.credentials-table th:nth-child(2) { width: 15%; }  /* Username */
-.credentials-table th:nth-child(3) { width: 42%; }  /* Password + buttons */
+.credentials-table th:nth-child(1) { width: 14%; }  /* Domain */
+.credentials-table th:nth-child(2) { width: 14%; }  /* Username */
+.credentials-table th:nth-child(3) { width: 38%; }  /* Password + buttons */
 .credentials-table th:nth-child(4) { width: 18%; }  /* Notes */
-.credentials-table th:nth-child(5) { width: 10%; }  /* Delete */
+.credentials-table th:nth-child(5) { width: 16%; }  /* Actions */
 
 .credentials-table td {
     padding: 8px 12px;
@@ -240,4 +240,53 @@ button.delete {
 
 button.delete:hover {
     background-color: #c0392b;
+}
+
+.col-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.edit-btn {
+    background-color: #8e44ad;
+    padding: 4px 8px;
+    font-size: 0.78em;
+}
+
+.edit-btn:hover {
+    background-color: #732d91;
+}
+
+.save-btn {
+    background-color: #27ae60;
+    padding: 4px 8px;
+    font-size: 0.78em;
+}
+
+.save-btn:hover {
+    background-color: #219a52;
+}
+
+.cancel-btn {
+    background-color: #95a5a6;
+    padding: 4px 8px;
+    font-size: 0.78em;
+}
+
+.cancel-btn:hover {
+    background-color: #7f8c8d;
+}
+
+.edit-input {
+    width: 100%;
+    padding: 4px 6px;
+    font-size: 0.85em;
+    border: 1px solid #aaa;
+    border-radius: 3px;
+    box-sizing: border-box;
+}
+
+.edit-pass {
+    font-family: monospace;
 }

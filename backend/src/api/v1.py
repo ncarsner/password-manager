@@ -109,6 +109,35 @@ def add_password(vault_id: int) -> Any:
     return jsonify({"message": "Credential added successfully", "id": password_id}), 201
 
 
+@api_v1.route("/passwords/<int:password_id>", methods=["PATCH"])
+def update_password(password_id: int) -> Any:
+    """Update fields of a specific credential entry."""
+    data = request.json
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    kwargs: dict[str, Any] = {}
+    if "domain" in data:
+        kwargs["domain"] = data["domain"]
+    if "username" in data:
+        kwargs["username"] = data["username"]
+    if "notes" in data:
+        kwargs["notes"] = data["notes"]
+    if "password" in data:
+        raw_password: str = data["password"]
+        if not (8 <= len(raw_password) <= 32):
+            return jsonify({"error": "Password must be 8–32 characters"}), 400
+        kwargs["encrypted_password"] = crypto_service.encrypt(raw_password)
+
+    if not kwargs:
+        return jsonify({"error": "No valid fields to update"}), 400
+
+    success = storage_service.update_password(password_id, **kwargs)
+    if not success:
+        return jsonify({"error": "Password entry not found"}), 404
+    return jsonify({"message": "Credential updated successfully"}), 200
+
+
 @api_v1.route("/passwords/<int:password_id>", methods=["DELETE"])
 def delete_password(password_id: int) -> Any:
     """Delete a specific password entry."""

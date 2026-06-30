@@ -139,7 +139,7 @@ function renderPasswords(credentials) {
     table.className = 'credentials-table';
 
     const thead = document.createElement('thead');
-    thead.innerHTML = '<tr><th>Domain</th><th>Username</th><th>Password</th><th>Notes</th><th></th></tr>';
+    thead.innerHTML = '<tr><th>Domain</th><th>Username</th><th>Password</th><th>Notes</th><th>Actions</th></tr>';
     table.appendChild(thead);
 
     const tbody = document.createElement('tbody');
@@ -214,10 +214,19 @@ function renderPasswords(credentials) {
         row.appendChild(notesCell);
 
         const actionCell = document.createElement('td');
+        actionCell.className = 'col-actions';
+
+        const editBtn = document.createElement('button');
+        editBtn.textContent = 'Edit';
+        editBtn.className = 'edit-btn';
+        editBtn.onclick = () => enterEditMode(row, p);
+
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = 'Delete';
         deleteBtn.className = 'delete';
         deleteBtn.onclick = () => deletePassword(p.id);
+
+        actionCell.appendChild(editBtn);
         actionCell.appendChild(deleteBtn);
         row.appendChild(actionCell);
 
@@ -225,6 +234,83 @@ function renderPasswords(credentials) {
     });
     table.appendChild(tbody);
     container.appendChild(table);
+}
+
+function enterEditMode(row, p) {
+    const [domainCell, usernameCell, passCell, notesCell, actionCell] = row.cells;
+
+    const domainInput = document.createElement('input');
+    domainInput.type = 'text';
+    domainInput.value = p.domain || '';
+    domainInput.className = 'edit-input';
+
+    const usernameInput = document.createElement('input');
+    usernameInput.type = 'text';
+    usernameInput.value = p.username || '';
+    usernameInput.className = 'edit-input';
+
+    const passInput = document.createElement('input');
+    passInput.type = 'password';
+    passInput.placeholder = 'New password (8–32) or leave blank';
+    passInput.className = 'edit-input edit-pass';
+    passInput.minLength = 8;
+    passInput.maxLength = 32;
+
+    const notesInput = document.createElement('input');
+    notesInput.type = 'text';
+    notesInput.value = p.notes || '';
+    notesInput.className = 'edit-input';
+
+    domainCell.innerHTML = '';
+    domainCell.appendChild(domainInput);
+    usernameCell.innerHTML = '';
+    usernameCell.appendChild(usernameInput);
+    passCell.innerHTML = '';
+    passCell.appendChild(passInput);
+    notesCell.innerHTML = '';
+    notesCell.appendChild(notesInput);
+
+    actionCell.innerHTML = '';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.textContent = 'Save';
+    saveBtn.className = 'save-btn';
+    saveBtn.onclick = () => saveEdit(p.id, domainInput, usernameInput, passInput, notesInput);
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.className = 'cancel-btn';
+    cancelBtn.onclick = () => loadPasswords(currentVaultId);
+
+    actionCell.appendChild(saveBtn);
+    actionCell.appendChild(cancelBtn);
+}
+
+async function saveEdit(passwordId, domainInput, usernameInput, passInput, notesInput) {
+    const body = {
+        domain: domainInput.value.trim(),
+        username: usernameInput.value.trim(),
+        notes: notesInput.value.trim(),
+    };
+    if (passInput.value) {
+        body.password = passInput.value;
+    }
+    try {
+        const resp = await fetch(`${apiBaseUrl}/passwords/${passwordId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        if (!resp.ok) {
+            const err = await resp.json();
+            alert(err.error || 'Failed to update credential');
+            return;
+        }
+        loadPasswords(currentVaultId);
+    } catch (error) {
+        console.error('Error updating credential:', error);
+        alert('Error updating credential');
+    }
 }
 
 async function addPassword(vaultId, domain, username, password, notes) {
