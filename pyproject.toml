@@ -25,6 +25,7 @@ target-version = "py314"
 
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]
+pythonpath = ["."]
 addopts = "-v --cov=backend/src --cov-report=term-missing"
 
 [tool.coverage.report]

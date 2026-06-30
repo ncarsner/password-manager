@@ -66,6 +66,22 @@ def test_fernet_key_auto_generated_when_missing(
         assert os.environ.get("FERNET_KEY") == key
 
 
+def test_storage_update_password_no_fields(tmp_path: pytest.TempPathFactory) -> None:
+    """update_password returns False when no fields are supplied."""
+    import tempfile
+
+    from backend.src.app import init_db
+    from backend.src.services.storage import StorageService
+
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
+        db = f.name
+    init_db(db)
+    svc = StorageService(db_path=db)
+    result = svc.update_password(999)
+    assert result is False
+    os.unlink(db)
+
+
 def test_helpers():
     assert validate_password("Pass1234") is True
     assert validate_password("short") is False

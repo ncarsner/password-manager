@@ -12,7 +12,33 @@ wheels/
 # Environment variables
 .env
 
-database.db
+# Databases
+*.db
+
+# Test / coverage artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Type / lint caches
+.mypy_cache/
+.ruff_cache/
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# JetBrains IDEs
+.idea/
+
+# JS dependencies
+node_modules/
 
 AGENTS/
 .claude/
